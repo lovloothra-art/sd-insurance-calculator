@@ -73,6 +73,7 @@
         height: 18px;
     }
     .checkbox-group label { font-weight: normal; margin: 0; cursor: pointer; font-size: 14px;}
+    .checkbox-group input[disabled] + label, .checkbox-group input[disabled] { cursor: not-allowed; opacity: 0.7; }
     
     /* Info text */
     .info-labels {
@@ -272,12 +273,12 @@
         <div class="section-title">Add-on Covers (Check to include)</div>
         <div class="input-group">
             <label>Death Cover Coverage (%)</label>
-            <input type="number" id="deathCoverage" value="100" min="1" max="100">
+            <input type="number" id="deathCoverage" value="100" min="1" max="100" disabled>
         </div>
-        <div class="checkbox-group"><input type="checkbox" id="reqCI" checked><label>Critical Illness (<=60 yrs)</label></div>
-        <div class="checkbox-group"><input type="checkbox" id="reqPPD" checked><label>Perm. Disability (<=60 yrs)</label></div>
-        <div class="checkbox-group"><input type="checkbox" id="reqEMI" checked><label>EMI Benefit (<=60 yrs)</label></div>
-        <div class="checkbox-group"><input type="checkbox" id="reqProp" checked><label>Property Insurance</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqCI" checked disabled><label>Critical Illness (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqPPD" checked disabled><label>Perm. Disability (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqEMI" checked disabled><label>EMI Benefit (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqProp" checked disabled><label>Property Insurance</label></div>
     </div>
 
     <div class="summary-card">
