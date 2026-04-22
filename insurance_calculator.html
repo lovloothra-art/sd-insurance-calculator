@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Secured Direct Insurance Calculator - Acko</title>
+<style>
+    /* Base Styles & Mobile First */
+    body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background-color: #f4f7f6; 
+        margin: 0; 
+        padding: 10px; 
+        color: #333; 
+    }
+    h2 { 
+        text-align: center; 
+        color: #2c3e50; 
+        font-size: 1.5rem;
+        margin-top: 10px;
+    }
+    .container { 
+        max-width: 1100px; 
+        margin: 0 auto; 
+        background: #fff; 
+        padding: 15px 20px; 
+        border-radius: 8px; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+    }
+    
+    /* Grid Layout */
+    .grid { 
+        display: grid; 
+        grid-template-columns: 1fr; 
+        gap: 12px; 
+        margin-bottom: 10px; 
+    }
+    .section-title { 
+        grid-column: 1 / -1; 
+        margin-top: 15px; 
+        margin-bottom: 5px; 
+        color: #2c3e50; 
+        border-bottom: 2px solid #3498db; 
+        padding-bottom: 5px; 
+        font-size: 1.1rem;
+        font-weight: 600;
+    }
+    
+    /* Inputs */
+    .input-group { display: flex; flex-direction: column; }
+    .input-group label { margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555; }
+    .input-group input, .input-group select { 
+        padding: 10px; 
+        border: 1px solid #ccc; 
+        border-radius: 4px; 
+        font-size: 14px; 
+        transition: border-color 0.2s; 
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .input-group input:focus { border-color: #3498db; outline: none; }
+    
+    /* Checkboxes */
+    .checkbox-group { 
+        display: flex; 
+        align-items: center; 
+        gap: 10px; 
+        margin-top: 5px; 
+        padding: 5px 0;
+    }
+    .checkbox-group input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    .checkbox-group label { font-weight: normal; margin: 0; cursor: pointer; font-size: 14px;}
+    
+    /* Info text */
+    .info-labels {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #e9ecef;
+    }
+    .flag { color: #e74c3c; font-weight: bold; }
+
+    /* Summary Card */
+    .summary-card {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-top: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .summary-item {
+        display: flex;
+        flex-direction: column;
+    }
+    .summary-item .label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #ecf0f1;
+        margin-bottom: 4px;
+    }
+    .summary-item .value {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+    /* Print Button */
+    .header-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .print-btn {
+        background-color: #27ae60;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background 0.3s;
+    }
+    .print-btn:hover {
+        background-color: #2ecc71;
+    }
+
+    /* Responsive Table Wrapper */
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto; 
+        -webkit-overflow-scrolling: touch; 
+        margin-top: 15px;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px #ddd; 
+    }
+    table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        font-size: 13px; 
+        min-width: 800px; 
+    }
+    th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
+    th { background-color: #f8f9fa; font-weight: bold; white-space: nowrap; }
+    .totals { font-weight: bold; background-color: #eaf2f8; }
+
+    /* Tablet and Desktop adjustments */
+    @media (min-width: 600px) {
+        .grid { grid-template-columns: repeat(2, 1fr); }
+        .info-labels { align-items: center; flex-direction: row; justify-content: space-around; }
+    }
+    
+    @media (min-width: 900px) {
+        body { padding: 20px; }
+        .grid { grid-template-columns: repeat(4, 1fr); gap: 15px;}
+        .info-labels { flex-direction: column; justify-content: center; align-items: center; }
+        table { min-width: auto; font-size: 13px; } 
+    }
+
+    /* Print specific CSS */
+    @media print {
+        @page { size: A4 portrait; margin: 10mm; }
+        body { padding: 0; background: #fff; font-size: 11px; }
+        .container { box-shadow: none; padding: 0; max-width: 100%; }
+        h2 { font-size: 16px; margin: 0 0 10px 0; text-align: left; }
+        .header-actions { justify-content: flex-start; margin-bottom: 10px; }
+        .print-btn { display: none; } /* Hide print button */
+        
+        .grid { gap: 5px; margin-bottom: 5px; }
+        .input-group input { border: none; border-bottom: 1px solid #000; padding: 2px 0; font-size: 11px; border-radius: 0; }
+        .input-group label { margin-bottom: 0px; font-size: 10px; color: #000; }
+        .section-title { font-size: 12px; margin-top: 10px; padding-bottom: 2px; border-bottom: 1px solid #000; color: #000;}
+        .checkbox-group { display: none; } /* Hide checkboxes on print, table shows what was selected */
+        
+        .summary-card { 
+            background: none !important; 
+            color: #000 !important; 
+            border: 1px solid #000; 
+            box-shadow: none; 
+            padding: 10px; 
+            margin-top: 10px;
+        }
+        .summary-item .label { color: #000; font-size: 10px; }
+        .summary-item .value { font-size: 16px; }
+        
+        .table-wrapper { overflow: visible; box-shadow: none; margin-top: 10px; }
+        table { min-width: 100%; font-size: 10px; }
+        th { background-color: #eee !important; -webkit-print-color-adjust: exact; color: #000; }
+        th, td { padding: 4px; border: 1px solid #000; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-actions">
+        <h2>Secured Direct Insurance Calculator - Acko</h2>
+        <button class="print-btn" onclick="window.print()">🖨️ Print / PDF</button>
+    </div>
+    
+    <div class="grid">
+        <div class="section-title">Customer Details</div>
+        <div class="input-group" style="grid-column: span 1;">
+            <label>Customer Name</label>
+            <input type="text" id="customerName" placeholder="Enter Customer Name" value="KSF Esteemed Customer">
+        </div>
+        <div class="input-group">
+            <label>Date of Birth</label>
+            <input type="date" id="dob" value="1984-03-26">
+        </div>
+        <div class="input-group">
+            <label>Loan Disbursement Date</label>
+            <input type="date" id="disbDate" value="2025-12-04">
+        </div>
+        <div class="input-group info-labels">
+            <label>Age: <span id="ageDisplay" style="font-size:16px;">-</span></label>
+            <label>Med Flag: <span id="medicalFlag" class="flag">-</span></label>
+        </div>
+
+        <div class="section-title">Loan & Sum Assured Info</div>
+        <div class="input-group">
+            <label>Loan Amount (total)</label>
+            <input type="number" id="loanAmt" value="5000000">
+        </div>
+        <div class="input-group">
+            <label>Sum Assured (LI)</label>
+            <input type="number" id="saLI" value="2000000">
+        </div>
+        <div class="input-group">
+            <label>Sum Assured (GI)</label>
+            <input type="number" id="saGI" value="5000000">
+        </div>
+        <div class="input-group">
+            <label>Sum Assured (Property)</label>
+            <input type="number" id="saProp" value="5000000">
+        </div>
+
+        <div class="section-title">Tenure & Coverages</div>
+        <div class="input-group">
+            <label>Loan Tenure (Years)</label>
+            <input type="number" id="loanTenure" value="15" min="1" max="25">
+        </div>
+        <div class="input-group">
+            <label>Life Cover Tenure (Max 20)</label>
+            <input type="number" id="lifeTenure" value="5" min="1" max="20">
+        </div>
+        <div class="input-group">
+            <label>GI Cover Tenure (Max 5)</label>
+            <input type="number" id="giTenure" value="5" min="1" max="5">
+        </div>
+        <div class="input-group">
+            <label>Property Cover Tenure (Max 10)</label>
+            <input type="number" id="propTenure" value="10" min="1" max="10">
+        </div>
+        
+        <div class="section-title">Add-on Covers (Check to include)</div>
+        <div class="input-group">
+            <label>Death Cover Coverage (%)</label>
+            <input type="number" id="deathCoverage" value="100" min="1" max="100">
+        </div>
+        <div class="checkbox-group"><input type="checkbox" id="reqCI" checked><label>Critical Illness (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqPPD" checked><label>Perm. Disability (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqEMI" checked><label>EMI Benefit (<=60 yrs)</label></div>
+        <div class="checkbox-group"><input type="checkbox" id="reqProp" checked><label>Property Insurance</label></div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-item">
+            <span class="label">Total Premium (Incl. GST)</span>
+            <span class="value" id="summaryTotalAmt">₹0.00</span>
+        </div>
+        <div class="summary-item">
+            <span class="label">Value Penetration</span>
+            <span class="value" id="summaryVPVal">0.00%</span>
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="resultTable">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Covers</th>
+                    <th>Tenure</th>
+                    <th>Coverage % / Flag</th>
+                    <th>Sum Assured</th>
+                    <th>Premium</th>
+                    <th>GST @ 18%</th>
+                    <th>Total</th>
+                    <th>Value Penetration</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const giRates = {
+        ci_upto45: [0.0013333333333333333, 0.0026666666666666666, 0.004, 0.0053333333333333332, 0.0064444444444444436],
+        ci_over45: [0.0026666666666666666, 0.0053333333333333332, 0.0077777777777777776, 0.010444444444444445, 0.01311111111111111],
+        ppd: [0.00008888888888888889, 0.00017777777777777779, 0.00026666666666666668, 0.00035555555555555557, 0.00044444444444444447],
+        emi: [0.0026444444444444445, 0.0028444444444444446, 0.0040666666666666663, 0.0058666666666666667, 0.0090444444444444435],
+        property: [0.00032, 0.00064, 0.00097, 0.00129, 0.00161, 0.00193, 0.00225, 0.00258, 0.0029, 0.00322]
+    };
+
+    const lifeRates = {
+        18: [2.42,4.45,6.05,7.96,9.89,11.83,13.75,15.67,17.57,19.44,21.28,23.09,24.87,26.62,28.34,30.04,31.72,33.39,35.05,36.7],
+        19: [2.48,4.55,6.18,8.12,10.06,12,13.94,15.86,17.76,19.64,21.49,23.31,25.11,26.88,28.62,30.36,32.08,33.79,35.5,37.21],
+        20: [2.51,4.62,6.26,8.2,10.15,12.09,14.03,15.96,17.86,19.75,21.61,23.45,25.26,27.06,28.84,30.62,32.39,34.16,35.93,37.71],
+        21: [2.53,4.65,6.29,8.24,10.18,12.13,14.07,15.99,17.91,19.8,21.68,23.54,25.39,27.22,29.05,30.88,32.71,34.55,36.4,38.26],
+        22: [2.54,4.65,6.3,8.24,10.18,12.13,14.07,16,17.93,19.84,21.74,23.63,25.52,27.4,29.28,31.18,33.08,35,36.95,38.91],
+        23: [2.54,4.65,6.29,8.23,10.17,12.12,14.06,16.01,17.95,19.89,21.83,23.76,25.7,27.64,29.59,31.57,33.56,35.58,37.62,39.7],
+        24: [2.53,4.64,6.28,8.21,10.16,12.12,14.08,16.05,18.02,19.99,21.97,23.96,25.96,27.97,30.01,32.08,34.17,36.3,38.47,40.67],
+        25: [2.53,4.63,6.27,8.21,10.17,12.14,14.13,16.13,18.14,20.16,22.2,24.25,26.33,28.44,30.58,32.75,34.96,37.21,39.51,41.87],
+        26: [2.53,4.64,6.28,8.24,10.21,12.21,14.23,16.27,18.34,20.42,22.53,24.67,26.84,29.05,31.3,33.6,35.94,38.34,40.8,43.32],
+        27: [2.53,4.65,6.31,8.29,10.3,12.34,14.4,16.5,18.63,20.79,22.99,25.22,27.51,29.83,32.21,34.65,37.15,39.71,42.34,45.06],
+        28: [2.55,4.69,6.37,8.39,10.44,12.53,14.65,16.82,19.03,21.28,23.58,25.94,28.34,30.81,33.34,35.93,38.6,41.35,44.18,47.12],
+        29: [2.57,4.75,6.47,8.53,10.63,12.79,14.99,17.25,19.55,21.91,24.33,26.82,29.37,31.99,34.69,37.46,40.33,43.29,46.36,49.55],
+        30: [2.61,4.83,6.6,8.72,10.9,13.13,15.43,17.78,20.2,22.69,25.25,27.89,30.6,33.4,36.28,39.26,42.35,45.56,48.89,52.37],
+        31: [2.66,4.95,6.77,8.97,11.23,13.56,15.96,18.44,20.99,23.62,26.34,29.15,32.04,35.04,38.14,41.36,44.71,48.2,51.84,55.65],
+        32: [2.73,5.09,6.99,9.27,11.64,14.08,16.61,19.22,21.93,24.73,27.62,30.62,33.73,36.95,40.3,43.79,47.44,51.24,55.24,59.43],
+        33: [2.82,5.27,7.25,9.64,12.12,14.7,17.37,20.14,23.02,26,29.1,32.31,35.66,39.15,42.78,46.58,50.57,54.75,59.14,63.75],
+        34: [2.92,5.48,7.56,10.07,12.69,15.42,18.25,21.2,24.27,27.47,30.79,34.26,37.88,41.66,45.63,49.79,54.16,58.76,63.6,68.69],
+        35: [3.04,5.72,7.91,10.57,13.34,16.24,19.26,22.41,25.7,29.14,32.73,36.48,40.41,44.54,48.88,53.45,58.27,63.34,68.67,74.28],
+        36: [3.17,6.01,8.33,11.14,14.1,17.19,20.42,23.8,27.34,31.04,34.93,39.02,43.31,47.83,52.6,57.64,62.95,68.55,74.43,80.59],
+        37: [3.33,6.33,8.8,11.8,14.95,18.26,21.72,25.36,29.19,33.21,37.44,41.9,46.61,51.59,56.85,62.41,68.27,74.44,80.91,87.67],
+        38: [3.51,6.7,9.33,12.54,15.91,19.47,23.2,27.14,31.29,35.67,40.3,45.2,50.39,55.88,61.69,67.83,74.3,81.09,88.19,95.57],
+        39: [3.71,7.12,9.93,13.37,17,20.83,24.88,29.16,33.69,38.48,43.57,48.97,54.69,60.77,67.19,73.96,81.09,88.54,96.3,104.33],
+        40: [3.94,7.59,10.61,14.31,18.23,22.38,26.78,31.46,36.42,41.69,47.31,53.27,59.61,66.32,73.41,80.88,88.69,96.84,105.29,114],
+        41: [4.19,8.11,11.37,15.37,19.63,24.15,28.96,34.09,39.55,45.38,51.59,58.19,65.2,72.62,80.43,88.63,97.18,106.05,115.2,124.6],
+        42: [4.48,8.71,12.24,16.59,21.23,26.18,31.47,37.12,43.16,49.61,56.49,63.8,71.55,79.73,88.31,97.27,106.58,116.19,126.07,136.17],
+        43: [4.81,9.4,13.24,17.99,23.07,28.52,34.36,40.61,47.31,54.46,62.08,70.17,78.71,87.69,97.08,106.84,116.93,127.3,137.92,148.75],
+        44: [5.19,10.19,14.39,19.61,25.21,31.23,37.7,44.64,52.07,60,68.43,77.35,86.73,96.56,106.78,117.36,128.25,139.41,150.78,162.34],
+        45: [5.63,11.1,15.73,21.49,27.69,34.37,41.55,49.26,57.5,66.28,75.58,85.38,95.65,106.35,117.43,128.85,140.55,152.5,164.65,176.97],
+        46: [6.14,12.17,17.29,23.67,30.56,37.98,45.97,54.52,63.65,73.33,83.55,94.28,105.46,117.06,129.02,141.29,153.83,166.59,179.53,192.63],
+        47: [6.74,13.41,19.1,26.2,33.86,42.12,50.98,60.46,70.53,81.17,92.35,104.02,116.15,128.66,141.51,154.65,168.04,181.64,195.41,209.33],
+        48: [7.43,14.85,21.19,29.09,37.62,46.79,56.61,67.06,78.13,89.77,101.94,114.58,127.66,141.1,154.87,168.9,183.17,197.64,212.27,227.05],
+        49: [8.22,16.49,23.56,32.35,41.83,51.99,62.82,74.3,86.4,99.06,112.24,125.88,139.93,154.32,169.02,183.98,199.16,214.54,230.08,245.77],
+        50: [9.13,18.34,26.21,35.98,46.47,57.67,69.57,82.12,95.27,108.98,123.19,137.84,152.87,168.24,183.91,199.82,215.96,232.29,248.8,265.46],
+        51: [10.13,20.39,29.13,39.94,51.5,63.8,76.79,90.43,104.66,119.43,134.69,150.37,166.42,182.8,199.46,216.39,233.55,250.89,268.43,0],
+        52: [11.23,22.61,32.27,44.18,56.86,70.28,84.39,99.13,114.47,130.32,146.64,163.38,180.49,197.93,215.65,233.65,251.88,270.31,0,0],
+        53: [12.4,24.99,35.61,48.66,62.48,77.05,92.29,108.17,124.61,141.57,159,176.84,195.05,213.6,232.46,251.6,270.98,0,0,0],
+        54: [13.64,27.48,39.09,53.3,68.3,84.02,100.42,117.45,135.04,153.14,171.72,190.72,210.1,229.84,249.91,270.27,0,0,0,0],
+        55: [14.93,30.05,42.68,58.08,74.26,91.16,108.74,126.95,145.72,165.03,184.81,205.04,225.68,246.71,268.07,0,0,0,0,0],
+        56: [16.25,32.69,46.34,62.94,80.33,98.45,117.25,136.68,156.7,177.27,198.35,219.91,241.9,264.31,0,0,0,0,0,0],
+        57: [17.59,35.37,50.08,67.91,86.53,105.9,125.97,146.7,168.05,189.98,212.45,235.45,258.91,0,0,0,0,0,0,0],
+        58: [18.96,38.11,53.88,72.98,92.89,113.58,135,157.12,179.89,203.3,227.29,251.84,0,0,0,0,0,0,0,0],
+        59: [20.36,40.91,57.8,78.22,99.5,121.59,144.45,168.07,192.4,217.41,243.05,0,0,0,0,0,0,0,0,0],
+        60: [21.82,43.83,61.89,83.72,106.45,130.05,154.49,179.75,205.78,232.54,0,0,0,0,0,0,0,0,0,0],
+        61: [23.34,46.9,66.22,89.57,113.88,139.13,165.3,192.35,220.24,0,0,0,0,0,0,0,0,0,0,0],
+        62: [24.97,50.19,70.88,95.88,121.93,149,177.07,206.1,0,0,0,0,0,0,0,0,0,0,0,0],
+        63: [26.74,53.76,75.96,102.78,130.75,159.84,190,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        64: [28.68,57.7,81.56,110.41,140.51,171.82,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+        65: [30.84,62.08,87.8,118.9,151.36,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    };
+
+    function calcAge(dob, disDate) {
+        const birthDate = new Date(dob);
+        const refDate = new Date(disDate);
+        let age = refDate.getFullYear() - birthDate.getFullYear();
+        const m = refDate.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && refDate.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    }
+
+    function checkMedicalFlag(age, saLI) {
+        let limit = 0;
+        if (age <= 40) limit = 5000000;
+        else if (age <= 45) limit = 5000000;
+        else if (age <= 50) limit = 4000000;
+        else if (age <= 55) limit = 2000000;
+        else if (age <= 60) limit = 1500000;
+        else limit = 0; // Age 60+ allows 0 non-medical limit
+        
+        return saLI <= limit ? "Non Medical" : "Medicals Required";
+    }
+
+    function formatAmt(val) {
+        return Number(val).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function formatPercent(val) {
+        return (val * 100).toFixed(4) + '%';
+    }
+
+    function calculatePremium() {
+        const dob = document.getElementById('dob').value;
+        const disbDate = document.getElementById('disbDate').value;
+        if(!dob || !disbDate) return;
+
+        const age = calcAge(dob, disbDate);
+        document.getElementById('ageDisplay').innerText = age >= 0 ? age : '-';
+
+        const saLI = Number(document.getElementById('saLI').value) || 0;
+        const medFlag = age >= 0 ? checkMedicalFlag(age, saLI) : '-';
+        document.getElementById('medicalFlag').innerText = medFlag;
+
+        const saGI = Number(document.getElementById('saGI').value) || 0;
+        const saProp = Number(document.getElementById('saProp').value) || 0;
+        const loanAmt = Number(document.getElementById('loanAmt').value) || 1;
+        
+        const lifeTenure = parseInt(document.getElementById('lifeTenure').value) || 1;
+        const giTenure = parseInt(document.getElementById('giTenure').value) || 1;
+        const propTenure = parseInt(document.getElementById('propTenure').value) || 1;
+        const deathCovPercent = (Number(document.getElementById('deathCoverage').value) || 0) / 100;
+
+        let totalPrem = 0;
+        let totalGST = 0;
+        const rows = [];
+
+        // 1. Life Insurance: Allowed up to Age 65
+        if (age >= 18 && age <= 65) {
+            if (lifeRates[age] && lifeRates[age][lifeTenure - 1]) {
+                const rate = lifeRates[age][lifeTenure - 1];
+                const basePrem = (saLI * deathCovPercent * rate) / 1000;
+                const gst = basePrem * 0.18;
+                const total = basePrem + gst;
+                const vp = total / loanAmt;
+                totalPrem += total;
+                totalGST += gst;
+                rows.push(`<tr><td>ACKO Life Insurance</td><td>Death Cover</td><td>${lifeTenure} Years</td><td>${(deathCovPercent*100).toFixed(0)}%</td><td>${saLI}</td><td>${formatAmt(basePrem)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(vp)}</td></tr>`);
+            } else {
+                rows.push(`<tr><td colspan="9" style="color:red; text-align:center;">No Life rate available for Age ${age}, Tenure ${lifeTenure}</td></tr>`);
+            }
+        } else if (age > 65) {
+            rows.push(`<tr><td colspan="9" style="color:red; text-align:center;">Death Cover is not available for Age > 65</td></tr>`);
+        }
+
+        const idxGI = giTenure - 1;
+        const idxProp = propTenure - 1;
+
+        // 2. GI Covers (CI, PPD, EMI) - Strict block for > 60
+        if (age <= 60) {
+            if (document.getElementById('reqCI').checked && idxGI >= 0 && idxGI < 5) {
+                const rate = age <= 45 ? giRates.ci_upto45[idxGI] : giRates.ci_over45[idxGI];
+                const base = saGI * rate;
+                const gst = base * 0.18;
+                const total = base + gst;
+                totalPrem += total; totalGST += gst;
+                rows.push(`<tr><td>ACKO General Insurance</td><td>Critical Illness</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+            }
+
+            if (document.getElementById('reqPPD').checked && idxGI >= 0 && idxGI < 5) {
+                const base = saGI * giRates.ppd[idxGI];
+                const gst = base * 0.18;
+                const total = base + gst;
+                totalPrem += total; totalGST += gst;
+                rows.push(`<tr><td>ACKO General Insurance</td><td>Permanent Disability</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+            }
+
+            if (document.getElementById('reqEMI').checked && idxGI >= 0 && idxGI < 5) {
+                const base = saGI * giRates.emi[idxGI];
+                const gst = base * 0.18;
+                const total = base + gst;
+                totalPrem += total; totalGST += gst;
+                rows.push(`<tr><td>ACKO General Insurance</td><td>EMI Benefit</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+            }
+        } else {
+            // Optional warning row if checkboxes were active but age > 60
+            if (document.getElementById('reqCI').checked || document.getElementById('reqPPD').checked || document.getElementById('reqEMI').checked) {
+                rows.push(`<tr><td colspan="9" style="color:#e67e22; text-align:center; font-size: 12px;">Note: CI, PPD, and EMI covers are excluded (Age > 60)</td></tr>`);
+            }
+        }
+
+        // 3. Property Insurance - No Age limit
+        if (document.getElementById('reqProp').checked && idxProp >= 0 && idxProp < 10) {
+            const base = saProp * giRates.property[idxProp];
+            const gst = base * 0.18;
+            const total = base + gst;
+            totalPrem += total; totalGST += gst;
+            rows.push(`<tr><td>ACKO General Insurance</td><td>Property Insurance</td><td>${propTenure} Years</td><td>Y</td><td>${saProp}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+        }
+
+        const finalTotalPremRounded = Math.ceil(totalPrem);
+        const finalVP = finalTotalPremRounded / loanAmt;
+        
+        // Update Table
+        rows.push(`<tr class="totals"><td colspan="5" style="text-align:right">Grand Total:</td><td>${formatAmt(totalPrem - totalGST)}</td><td>${formatAmt(totalGST)}</td><td>${formatAmt(finalTotalPremRounded)}</td><td>${formatPercent(finalVP)}</td></tr>`);
+        document.getElementById('resultBody').innerHTML = rows.join('');
+
+        // Update Summary Card
+        document.getElementById('summaryTotalAmt').innerText = '₹' + formatAmt(finalTotalPremRounded);
+        document.getElementById('summaryVPVal').innerText = formatPercent(finalVP);
+    }
+
+    window.onload = function() {
+        calculatePremium();
+        const inputs = document.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('input', calculatePremium);
+            input.addEventListener('change', calculatePremium);
+        });
+    };
+</script>
+
+</body>
+</html>
