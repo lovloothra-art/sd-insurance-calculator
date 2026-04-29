@@ -155,11 +155,12 @@
         width: 100%; 
         border-collapse: collapse; 
         font-size: 13px; 
-        min-width: 800px; 
+        min-width: 900px; 
     }
     th, td { padding: 8px; text-align: left; border: 1px solid #ddd; }
     th { background-color: #f8f9fa; font-weight: bold; white-space: nowrap; }
     .totals { font-weight: bold; background-color: #eaf2f8; }
+    .roundup-cell { background-color: #fef9e7; font-weight: bold; text-align: right; vertical-align: middle; }
 
     /* Tablet and Desktop adjustments */
     @media (min-width: 600px) {
@@ -204,6 +205,7 @@
         table { min-width: 100%; font-size: 10px; }
         th { background-color: #eee !important; -webkit-print-color-adjust: exact; color: #000; }
         th, td { padding: 4px; border: 1px solid #000; }
+        .roundup-cell { background-color: #fef9e7 !important; -webkit-print-color-adjust: exact; }
     }
 </style>
 </head>
@@ -304,6 +306,7 @@
                     <th>Premium</th>
                     <th>GST @ 18%</th>
                     <th>Total</th>
+                    <th>Round Up</th>
                     <th>Value Penetration</th>
                 </tr>
             </thead>
@@ -425,9 +428,16 @@
         const propTenure = parseInt(document.getElementById('propTenure').value) || 1;
         const deathCovPercent = (Number(document.getElementById('deathCoverage').value) || 0) / 100;
 
-        let totalPrem = 0;
-        let totalGST = 0;
-        const rows = [];
+        // ---- Bucket trackers (NEW: per-bucket totals for round-up) ----
+        let deathTotal = 0;          // Bucket 1: Death Cover total (incl. GST)
+        let clubbedTotal = 0;        // Bucket 2: CI + PPD + EMI total (incl. GST)
+        let propertyTotal = 0;       // Bucket 3: Property Insurance total (incl. GST)
+        let totalGST = 0;            // Sum of all GST (for display in Grand Total row)
+        let totalBase = 0;           // Sum of all base premiums (for display in Grand Total row)
+
+        // Track which clubbed rows exist, so we can place the merged Round Up cell correctly
+        const clubbedRows = [];      // Will store HTML row strings for CI/PPD/EMI
+        const otherRows = [];        // Death cover row(s) and property row(s) and any warning rows
 
         // 1. Life Insurance: Allowed up to Age 65
         if (age >= 18 && age <= 65) {
@@ -436,67 +446,122 @@
                 const basePrem = (saLI * deathCovPercent * rate) / 1000;
                 const gst = basePrem * 0.18;
                 const total = basePrem + gst;
-                const vp = total / loanAmt;
-                totalPrem += total;
+                deathTotal = total;
                 totalGST += gst;
-                rows.push(`<tr><td>ACKO Life Insurance</td><td>Death Cover</td><td>${lifeTenure} Years</td><td>${(deathCovPercent*100).toFixed(0)}%</td><td>${saLI}</td><td>${formatAmt(basePrem)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(vp)}</td></tr>`);
+                totalBase += basePrem;
+                const roundUp = Math.ceil(deathTotal);
+                const vp = roundUp / loanAmt;
+                otherRows.push(`<tr><td>ACKO Life Insurance</td><td>Death Cover</td><td>${lifeTenure} Years</td><td>${(deathCovPercent*100).toFixed(0)}%</td><td>${saLI}</td><td>${formatAmt(basePrem)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td class="roundup-cell">${formatAmt(roundUp)}</td><td>${formatPercent(vp)}</td></tr>`);
             } else {
-                rows.push(`<tr><td colspan="9" style="color:red; text-align:center;">No Life rate available for Age ${age}, Tenure ${lifeTenure}</td></tr>`);
+                otherRows.push(`<tr><td colspan="10" style="color:red; text-align:center;">No Life rate available for Age ${age}, Tenure ${lifeTenure}</td></tr>`);
             }
         } else if (age > 65) {
-            rows.push(`<tr><td colspan="9" style="color:red; text-align:center;">Death Cover is not available for Age > 65</td></tr>`);
+            otherRows.push(`<tr><td colspan="10" style="color:red; text-align:center;">Death Cover is not available for Age > 65</td></tr>`);
         }
 
         const idxGI = giTenure - 1;
         const idxProp = propTenure - 1;
 
         // 2. GI Covers (CI, PPD, EMI) - Strict block for > 60
+        // NEW: We collect these rows separately so we can merge the Round Up cell across them.
         if (age <= 60) {
             if (document.getElementById('reqCI').checked && idxGI >= 0 && idxGI < 5) {
                 const rate = age <= 45 ? giRates.ci_upto45[idxGI] : giRates.ci_over45[idxGI];
                 const base = saGI * rate;
                 const gst = base * 0.18;
                 const total = base + gst;
-                totalPrem += total; totalGST += gst;
-                rows.push(`<tr><td>ACKO General Insurance</td><td>Critical Illness</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+                clubbedTotal += total; totalGST += gst; totalBase += base;
+                clubbedRows.push({label: 'Critical Illness', tenure: giTenure, sa: saGI, base, gst, total});
             }
 
             if (document.getElementById('reqPPD').checked && idxGI >= 0 && idxGI < 5) {
                 const base = saGI * giRates.ppd[idxGI];
                 const gst = base * 0.18;
                 const total = base + gst;
-                totalPrem += total; totalGST += gst;
-                rows.push(`<tr><td>ACKO General Insurance</td><td>Permanent Disability</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+                clubbedTotal += total; totalGST += gst; totalBase += base;
+                clubbedRows.push({label: 'Permanent Disability', tenure: giTenure, sa: saGI, base, gst, total});
             }
 
             if (document.getElementById('reqEMI').checked && idxGI >= 0 && idxGI < 5) {
                 const base = saGI * giRates.emi[idxGI];
                 const gst = base * 0.18;
                 const total = base + gst;
-                totalPrem += total; totalGST += gst;
-                rows.push(`<tr><td>ACKO General Insurance</td><td>EMI Benefit</td><td>${giTenure} Years</td><td>Y</td><td>${saGI}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+                clubbedTotal += total; totalGST += gst; totalBase += base;
+                clubbedRows.push({label: 'EMI Benefit', tenure: giTenure, sa: saGI, base, gst, total});
             }
         } else {
             // Optional warning row if checkboxes were active but age > 60
             if (document.getElementById('reqCI').checked || document.getElementById('reqPPD').checked || document.getElementById('reqEMI').checked) {
-                rows.push(`<tr><td colspan="9" style="color:#e67e22; text-align:center; font-size: 12px;">Note: CI, PPD, and EMI covers are excluded (Age > 60)</td></tr>`);
+                otherRows.push(`<tr><td colspan="10" style="color:#e67e22; text-align:center; font-size: 12px;">Note: CI, PPD, and EMI covers are excluded (Age > 60)</td></tr>`);
             }
         }
 
         // 3. Property Insurance - No Age limit
+        let propertyRowHTML = '';
         if (document.getElementById('reqProp').checked && idxProp >= 0 && idxProp < 10) {
             const base = saProp * giRates.property[idxProp];
             const gst = base * 0.18;
             const total = base + gst;
-            totalPrem += total; totalGST += gst;
-            rows.push(`<tr><td>ACKO General Insurance</td><td>Property Insurance</td><td>${propTenure} Years</td><td>Y</td><td>${saProp}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td>${formatPercent(total/loanAmt)}</td></tr>`);
+            propertyTotal = total;
+            totalGST += gst;
+            totalBase += base;
+            const roundUp = Math.ceil(propertyTotal);
+            propertyRowHTML = `<tr><td>ACKO General Insurance</td><td>Property Insurance</td><td>${propTenure} Years</td><td>Y</td><td>${saProp}</td><td>${formatAmt(base)}</td><td>${formatAmt(gst)}</td><td>${formatAmt(total)}</td><td class="roundup-cell">${formatAmt(roundUp)}</td><td>${formatPercent(roundUp/loanAmt)}</td></tr>`;
         }
 
-        const finalTotalPremRounded = Math.ceil(totalPrem);
+        // ---- Build the clubbed-bucket rows with a MERGED Round Up cell ----
+        // The Round Up cell is the ceil of the SUM (CI + PPD + EMI), spanning all rows in the bucket.
+        const clubbedRoundUp = Math.ceil(clubbedTotal);
+        const clubbedRowsHTML = [];
+        clubbedRows.forEach((r, i) => {
+            const vp = (clubbedRoundUp / loanAmt); // Same VP shown across the bucket (based on rounded sum)
+            // Only on the FIRST row of the bucket, render the merged Round Up cell with rowspan.
+            if (i === 0) {
+                clubbedRowsHTML.push(
+                    `<tr>` +
+                    `<td>ACKO General Insurance</td>` +
+                    `<td>${r.label}</td>` +
+                    `<td>${r.tenure} Years</td>` +
+                    `<td>Y</td>` +
+                    `<td>${r.sa}</td>` +
+                    `<td>${formatAmt(r.base)}</td>` +
+                    `<td>${formatAmt(r.gst)}</td>` +
+                    `<td>${formatAmt(r.total)}</td>` +
+                    `<td class="roundup-cell" rowspan="${clubbedRows.length}">${formatAmt(clubbedRoundUp)}</td>` +
+                    `<td rowspan="${clubbedRows.length}" style="vertical-align:middle;">${formatPercent(vp)}</td>` +
+                    `</tr>`
+                );
+            } else {
+                clubbedRowsHTML.push(
+                    `<tr>` +
+                    `<td>ACKO General Insurance</td>` +
+                    `<td>${r.label}</td>` +
+                    `<td>${r.tenure} Years</td>` +
+                    `<td>Y</td>` +
+                    `<td>${r.sa}</td>` +
+                    `<td>${formatAmt(r.base)}</td>` +
+                    `<td>${formatAmt(r.gst)}</td>` +
+                    `<td>${formatAmt(r.total)}</td>` +
+                    `</tr>`
+                );
+            }
+        });
+
+        // ---- Final assembly: order rows like the sales-team example ----
+        // Death Cover row -> Clubbed bucket rows -> Property row -> Grand total
+        const rows = [];
+        // Push Death Cover (and any warning rows that landed in otherRows)
+        // We split otherRows into "death-related" vs "post-clubbed" warnings, but for simplicity
+        // we put all otherRows that came BEFORE the clubbed section first.
+        rows.push(...otherRows);
+        rows.push(...clubbedRowsHTML);
+        if (propertyRowHTML) rows.push(propertyRowHTML);
+
+        // ---- Grand total: sum of the THREE bucket round-ups ----
+        const finalTotalPremRounded = Math.ceil(deathTotal) + Math.ceil(clubbedTotal) + Math.ceil(propertyTotal);
         const finalVP = finalTotalPremRounded / loanAmt;
-        
-        // Update Table
-        rows.push(`<tr class="totals"><td colspan="5" style="text-align:right">Grand Total:</td><td>${formatAmt(totalPrem - totalGST)}</td><td>${formatAmt(totalGST)}</td><td>${formatAmt(finalTotalPremRounded)}</td><td>${formatPercent(finalVP)}</td></tr>`);
+
+        rows.push(`<tr class="totals"><td colspan="5" style="text-align:right">Grand Total:</td><td>${formatAmt(totalBase)}</td><td>${formatAmt(totalGST)}</td><td>${formatAmt(totalBase + totalGST)}</td><td class="roundup-cell">${formatAmt(finalTotalPremRounded)}</td><td>${formatPercent(finalVP)}</td></tr>`);
         document.getElementById('resultBody').innerHTML = rows.join('');
 
         // Update Summary Card
